@@ -32,15 +32,16 @@ def get_fql_result(fql):
 def display_albums(request, fb_id):
     """Fetch all facebook albums for specified id"""
 
-    fql = "select aid, cover_pid, name from album where owner=%s" % fb_id
+    fql = "select aid, cover_pid, name, photo_count from album where owner=%s" % fb_id
     for blacklist in getattr(settings, 'FB_GALLERY_BLACKLIST', []):
         fql += " and not (name='%s')" % blacklist
     albums = get_fql_result(fql)
     for i in range(len(albums)):
         """ Get the main photo for each Album """
-        fql = "select src from photo where pid = '%s'" % albums[i]['cover_pid']
+        fql = "select src, src_big from photo where pid = '%s'" % albums[i]['cover_pid']
         for item in get_fql_result(fql):
             albums[i]['src'] = item['src']
+            albums[i]['src_big'] = item['src_big']
     data = RequestContext(request, {
         'albums':albums,
         })
