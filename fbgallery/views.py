@@ -16,7 +16,7 @@ def get_fql_result(fql):
     if cache_expires > 0:
         data = cache.get(cachename)
     if data == None: 
-        options ={
+        options = {
             'query':fql,
             'format':'json',
         }
@@ -28,13 +28,17 @@ def get_fql_result(fql):
             cache.set(cachename, data, cache_expires*60)
     return data
     
+
 def display_albums(request, fb_id):
-    """ Fetch all facebook albums for specified id """
-    fql = "select aid, cover_pid, name from album where owner=%s" % fb_id;
+    """Fetch all facebook albums for specified id"""
+
+    fql = "select aid, cover_pid, name from album where owner=%s" % fb_id
+    for blacklist in getattr(settings, 'FB_GALLERY_BLACKLIST', []):
+        fql += " and not (name='%s')" % blacklist
     albums = get_fql_result(fql)
     for i in range(len(albums)):
         """ Get the main photo for each Album """
-        fql = "select src from photo where pid = '%s'" % albums[i]['cover_pid'];
+        fql = "select src from photo where pid = '%s'" % albums[i]['cover_pid']
         for item in get_fql_result(fql):
             albums[i]['src'] = item['src']
     data = RequestContext(request, {
@@ -45,7 +49,11 @@ def display_albums(request, fb_id):
     
     
 def display_album(request, album_id, fb_id):
-    """ Display a facebook album, first check that the album id belongs to the page id specified """
+    """Display a facebook album
+
+    First check that the album id belongs to the page id specified
+    """
+    
     fql = "select aid, name from album where owner=%s and aid='%s'" % (fb_id, album_id)
     valid_album = get_fql_result(fql)
     if valid_album:
