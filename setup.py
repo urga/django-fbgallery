@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
  
 setup(
     name='django-fbgallery',
-    version=version=__import__("fbgallery").__version__,
+    version=__import__("fbgallery").__version__,
     description='Fetch Facebook Albums in Django',
     url='http://github.com/dantium/django-fbgallery',
     packages=find_packages(),
