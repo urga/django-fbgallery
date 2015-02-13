@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block maincontent %}
+{% block main-content %}
 <h1>Album: {{ album_detail.name }}</h1>
-<a href="{% url fb-albums %}" title="">Back to Albums</a>
+<a href="{% url 'fb-albums' %}" title="">Back to Albums</a>
 <div id="album">
 {% if album %}
 <ul class="picture-gallery">

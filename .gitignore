@@ -16,6 +16,7 @@ atlassian-ide-plugin.xml
 # Eggs that occur when installing through pip install -e
 *.egg
 *.egg-info
+*.eggs
 
 # Databases
 *.sqlite
