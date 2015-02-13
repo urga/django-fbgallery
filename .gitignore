@@ -22,8 +22,6 @@ atlassian-ide-plugin.xml
 *.sqlite
 *.sql
 
-# Version file for source distribution
-RELEASE-VERSION
 
 #######################################
 #####   From HTML5 Boilerplate   ######
