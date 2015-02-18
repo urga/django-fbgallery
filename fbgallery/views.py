@@ -1,49 +1,55 @@
-import urllib2, urllib
-import django.utils.simplejson as json
-from django.shortcuts import render_to_response, redirect
-from django.template import RequestContext, defaultfilters
-from django.http import HttpResponse, Http404
+from datetime import datetime
+import urllib2
+import urllib
+import json
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+from django.template.defaultfilters import slugify
+from django.http import Http404
 from django.core.cache import cache
+import logging
  
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
 fql_url = 'https://api.facebook.com/method/fql.query'
-cache_expires = getattr(settings, 'CACHE_EXPIRES', 30)
 
-def get_fql_result(fql):
-    cachename = 'fbgallery_cache_' + defaultfilters.slugify(fql)
-    data = None
-    if cache_expires > 0:
-        data = cache.get(cachename)
-    if data == None: 
+
+def get_fql_result(fql, timeout=cache.default_timeout*12):  # Without altering settings the default timeout=300
+    cachekey = 'fbgallery_cache_' + slugify(fql)
+    data = cache.get(cachekey)
+    if data is None:
+        logger.debug("Cache MISS for %s" % fql)
         options = {
-            'query':fql,
-            'format':'json',
+            'query': fql,
+            'format': 'json',
         }
         f = urllib2.urlopen(urllib2.Request(fql_url, urllib.urlencode(options)))
         response = f.read()
         f.close()  
         data = json.loads(response)
-        if cache_expires > 0:
-            cache.set(cachename, data, cache_expires*60)
+        cache.set(cachekey, data, timeout)
     return data
     
 
 def display_albums(request, fb_id):
     """Fetch all facebook albums for specified id"""
 
-    fql = "select aid, cover_pid, name, photo_count from album where owner=%s" % fb_id
+    fql = "select aid, cover_pid, name, photo_count, created from album where owner=%s" % fb_id
     for blacklist in getattr(settings, 'FB_GALLERY_BLACKLIST', []):
         fql += " and not (name='%s')" % blacklist
     albums = get_fql_result(fql)
-    for i in range(len(albums)):
+    for index, album in enumerate(albums):
+        """ Store unix timestamp as datetime """
+        album["date_created"] = datetime.fromtimestamp(int(album["created"]))
         """ Get the main photo for each Album """
-        fql = "select src, src_big from photo where pid = '%s'" % albums[i]['cover_pid']
-        for item in get_fql_result(fql):
-            albums[i]['src'] = item['src']
-            albums[i]['src_big'] = item['src_big']
+        fql = "select src, src_big from photo where pid = '%s'" % album['cover_pid']
+        for photo in get_fql_result(fql, timeout=cache.default_timeout*12*24):
+            albums[index]['src'] = photo['src']
+            albums[index]['src_big'] = photo['src_big']
+
     data = RequestContext(request, {
-        'albums':albums,
+        'albums': albums,
         })
     
     return render_to_response('fbgallery/albums.html', context_instance=data)
@@ -56,18 +62,15 @@ def display_album(request, album_id, fb_id):
     """
     
     fql = "select aid, name from album where owner=%s and aid='%s'" % (fb_id, album_id)
-    valid_album = get_fql_result(fql)
-    if valid_album:
-        fql = "select pid, src, src_small, src_big, caption from photo where aid = '%s'  order by created desc" % album_id
-        album = get_fql_result(fql)
-        [item for album_detail in valid_album for item in album_detail]       
+    album = get_fql_result(fql)[0]
+    if album:
+        fql = "select pid, src, src_small, src_big, src_big_height, src_big_width, caption from photo where aid = '%s'  order by created desc" % album_id
+        photos = get_fql_result(fql)
     else:
         raise Http404
     
     data = RequestContext(request, {
-        'album':album,
-        'album_detail':album_detail,
+        'album': album,
+        'photos': photos,
         })
     return render_to_response('fbgallery/album.html', context_instance=data)
-
-
