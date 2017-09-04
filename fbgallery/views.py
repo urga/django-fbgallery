@@ -55,7 +55,7 @@ def album_listview(request):
             album['photo_count'] = album_details['photo_count']
             album['src'] = graph.request('%s?fields=images' % cover_id)['images'][0]['source']
             albums.append(album)
-        cache.set('albums', albums)
+        cache.set('albums', albums, 1500)
     else:
         logger.debug("Cache HIT for 'albums'.")
     
@@ -75,7 +75,7 @@ def album_detailview(request, pk):
         album = {}
         album['images'] = images
         album['name'] = album_details['name']
-        cache.set('album_%s' % pk, album)
+        cache.set('album_%s' % pk, album, 1500)
 
     context = RequestContext(request, {
         'album': album,
