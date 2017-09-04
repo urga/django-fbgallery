@@ -2,13 +2,15 @@
 
 {% block main-content %}
 <h1>Albums</h1>
+<p>TEST</p>
+{{ albums }}
 <p>Select an album to view.</p>
 <div id="albums">
 {% if albums %}
 <ul class="picture-gallery">
 {% for album in albums %}
 	{% if album.src %}
-	<li><a href="{% url 'fb-album' album.aid %}" title="{{ album.name }}"><img src="{{ album.src }}" alt="{{ album.name }}" />
+	<li><a href="{% url 'fb-album' album.id %}" title="{{ album.name }}"><img src="{{ album.src }}" alt="{{ album.name }}" />
 	<span>{{ album.name }}</span></a></li>
 	{% endif %}
 {% endfor %}
